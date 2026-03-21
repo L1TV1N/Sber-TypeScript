@@ -1,0 +1,41 @@
+[project]
+name = "converter-agent"
+version = "0.1.0"
+description = "Sber hackathon TypeScript code generator"
+readme = "README.md"
+requires-python = ">=3.9,<3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "fastui>=0.9.0",
+    "langchain-gigachat>=0.3.0",
+    "langchain-core>=0.3.0",
+    "langgraph>=0.2.0",
+    "python-multipart>=0.0.9",
+    "uvicorn>=0.30.0",
+    "pydantic>=2.8.0",
+    "pydantic-settings>=2.3.0",
+    "python-dotenv>=1.0.1",
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+    "python-docx>=1.1.0",
+    "pypdf>=4.2.0",
+    "Pillow>=10.0.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "PIE"]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.9"
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = false
+ignore_missing_imports = true

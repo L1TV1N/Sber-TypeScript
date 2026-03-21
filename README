@@ -1,0 +1,35 @@
+# Sber TS Generator MVP
+
+Backend MVP для кейса генерации TypeScript-кода из табличных данных.
+
+## Что делает сервис
+
+Сервис принимает:
+- файл с табличными данными
+- пример целевого JSON
+
+И возвращает:
+- TypeScript-код функции преобразования файла в массив объектов нужной структуры
+
+## Стек
+
+- Python 3.9
+- FastAPI
+- LangChain
+- GigaChat
+- pandas / pypdf / python-docx
+
+## Запуск
+
+### 1. Создать `.env`
+
+Пример:
+
+```env
+APP_HOST=0.0.0.0
+APP_PORT=8000
+
+GIGACHAT_CREDENTIALS=YOUR_TOKEN
+GIGACHAT_SCOPE=GIGACHAT_API_CORP
+GIGACHAT_VERIFY_SSL_CERTS=False
+GIGACHAT_MODEL=GigaChat-2
