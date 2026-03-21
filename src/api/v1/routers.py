@@ -12,7 +12,12 @@ from api.v1.schemas import (
     GenerateTsResponse,
 )
 from services.file_preview import build_file_preview
-from services.llm_postprocess import looks_like_typescript, normalize_typescript_code
+from services.json_schema import extract_json_structure
+from services.llm_postprocess import (
+    looks_like_typescript,
+    normalize_typescript_code,
+    preview_is_informative,
+)
 
 api_router = APIRouter()
 
@@ -33,11 +38,25 @@ async def prediction(request: GenerateTsRequest):
             base64file=request.file_base64,
         )
 
+        target_schema = extract_json_structure(request.target_json_example)
+
+        informative, reason = preview_is_informative(extracted_preview)
+        if not informative:
+            return GenerateTsResponse(
+                content="",
+                extracted_preview=extracted_preview,
+                target_schema=target_schema,
+                status="warning",
+                valid_ts=False,
+                raw_content="",
+                message=reason,
+            )
+
         raw_result = chain.invoke(
             {
                 "file_name": request.file_name,
                 "file_extension": request.file_name.split(".")[-1].lower(),
-                "target_json_example": request.target_json_example,
+                "target_schema": target_schema,
                 "extracted_preview": extracted_preview,
             }
         )
@@ -48,9 +67,11 @@ async def prediction(request: GenerateTsRequest):
         return GenerateTsResponse(
             content=normalized_result,
             extracted_preview=extracted_preview,
+            target_schema=target_schema,
             status="ok" if valid_ts else "warning",
             valid_ts=valid_ts,
             raw_content=raw_result,
+            message="" if valid_ts else "LLM returned a response that needs manual review.",
         )
     except Exception as ex:
         return JSONResponse(
@@ -80,12 +101,24 @@ async def generate_from_example():
             file_name="crmData.csv",
             base64file=file_base64,
         )
+        target_schema = extract_json_structure(target_json_example)
+
+        informative, reason = preview_is_informative(extracted_preview)
+        if not informative:
+            return GenerateFromExampleResponse(
+                content="",
+                extracted_preview=extracted_preview,
+                target_schema=target_schema,
+                status="warning",
+                valid_ts=False,
+                message=reason,
+            )
 
         raw_result = chain.invoke(
             {
                 "file_name": "crmData.csv",
                 "file_extension": "csv",
-                "target_json_example": target_json_example,
+                "target_schema": target_schema,
                 "extracted_preview": extracted_preview,
             }
         )
@@ -96,8 +129,10 @@ async def generate_from_example():
         return GenerateFromExampleResponse(
             content=normalized_result,
             extracted_preview=extracted_preview,
+            target_schema=target_schema,
             status="ok" if valid_ts else "warning",
             valid_ts=valid_ts,
+            message="" if valid_ts else "LLM returned a response that needs manual review.",
         )
     except Exception as ex:
         return JSONResponse(

@@ -23,7 +23,13 @@ def infer_ts_type(value: Any) -> str:
     return "unknown"
 
 
-def infer_interface_from_json_example(target_json_example: str, interface_name: str = "OutputItem") -> str:
+def extract_json_structure(target_json_example: str, interface_name: str = "OutputItem") -> str:
+    """
+    Берём из JSON только СТРУКТУРУ:
+    - названия полей
+    - inferred types
+    Никакие значения из JSON не должны восприниматься как реальные данные.
+    """
     data = json.loads(target_json_example)
 
     if isinstance(data, list) and data:
@@ -34,15 +40,33 @@ def infer_interface_from_json_example(target_json_example: str, interface_name: 
         sample = {}
 
     if not isinstance(sample, dict):
-        return f"export interface {interface_name} {{\n  value: unknown\n}}"
+        return json.dumps(
+            {
+                "interface_name": interface_name,
+                "fields": [],
+                "note": "JSON example is not an object-like structure",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
 
-    lines = [f"export interface {interface_name} {{"]
-
+    fields = []
     for key, value in sample.items():
         ts_type = infer_ts_type(value)
         if ts_type == "null":
             ts_type = "string | number | boolean | null"
-        lines.append(f"  {key}: {ts_type};")
 
-    lines.append("}")
-    return "\n".join(lines)
+        fields.append(
+            {
+                "name": key,
+                "type": ts_type,
+            }
+        )
+
+    result = {
+        "interface_name": interface_name,
+        "fields": fields,
+        "note": "Use this JSON only as target schema. Do not copy any values from it into output examples or mapping logic.",
+    }
+
+    return json.dumps(result, ensure_ascii=False, indent=2)
