@@ -38,16 +38,12 @@
 ## 🎨 User Interface
 
 ### Main Dashboard
-![UI Dashboard](./assets/screenshots/dashboard.png)
 *Главный экран приложения с загрузкой файлов*
+<img width="1813" height="901" alt="image" src="https://github.com/user-attachments/assets/3a321b43-d9cd-469f-934f-b05a260234bb" />
 
-### Code Generation
-![Code Generation](./assets/screenshots/generation.png)
-*Процесс генерации TypeScript-кода*
+### Мобильная версия
+![photo_5330524795319292387_w](https://github.com/user-attachments/assets/b132aa32-2a0a-4d5a-b1c4-6f2672ffe029)
 
-### Result Preview
-![Result Preview](./assets/screenshots/result.png)
-*Предпросмотр и скачивание результата*
 
 ---
 
