@@ -40,7 +40,7 @@ def ui_landing():
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sber TypeScript Generator</title>
+  <title>TypeScript Generator</title>
   <style>
     :root {
       --safe-space: 20px;
@@ -762,7 +762,7 @@ def ui_landing():
         </div>
 
         <div class="brand-copy">
-          <h1 class="brand-title">Sber TypeScript Generator</h1>
+          <h1 class="brand-title">TypeScript Generator</h1>
           <p class="brand-subtitle">
             Загрузка исходного файла и JSON-примера с генерацией TypeScript-кода под целевую структуру.
           </p>
