@@ -13,7 +13,6 @@ class GenerateTsResponse(BaseModel):
     target_schema: str = Field(description="Структура, извлечённая из JSON")
     status: str = Field(description="Статус обработки", default="ok")
     valid_ts: bool = Field(description="Похоже ли на валидный TS-ответ", default=True)
-    raw_content: str = Field(description="Сырой ответ LLM", default="")
     message: str = Field(description="Служебное сообщение", default="")
 
 
@@ -24,3 +23,8 @@ class GenerateFromExampleResponse(BaseModel):
     status: str = Field(description="Статус обработки", default="ok")
     valid_ts: bool = Field(description="Похоже ли на валидный TS-ответ", default=True)
     message: str = Field(description="Служебное сообщение", default="")
+
+
+class LogsResponse(BaseModel):
+    status: str = Field(description="Статус ответа", default="ok")
+    lines: list[str] = Field(description="Последние строки файла логов", default_factory=list)

@@ -10,6 +10,7 @@ from api.v1.schemas import (
     GenerateFromExampleResponse,
     GenerateTsRequest,
     GenerateTsResponse,
+    LogsResponse,
 )
 from services.file_preview import build_file_preview
 from services.json_schema import extract_json_structure
@@ -18,39 +19,88 @@ from services.llm_postprocess import (
     normalize_typescript_code,
     preview_is_informative,
 )
+from services.project_logger import (
+    clear_log_file,
+    log_exception,
+    log_info,
+    log_warning,
+    read_recent_logs,
+)
 
 api_router = APIRouter()
 
 
 @api_router.get("/health")
 def health():
+    log_info("health_check_requested")
     return {
         "status": "ok",
         "service": "sber-ts-generator",
     }
 
 
+@api_router.get("/logs", response_model=LogsResponse)
+def get_logs(limit: int = 200):
+    limit = max(1, min(limit, 1000))
+    lines = read_recent_logs(limit=limit)
+    return LogsResponse(status="ok", lines=lines)
+
+
+@api_router.post("/logs/clear")
+def clear_logs():
+    clear_log_file()
+    log_info("project_log_cleared")
+    return {"status": "ok"}
+
+
 @api_router.post("/prediction", response_model=GenerateTsResponse)
 async def prediction(request: GenerateTsRequest):
     try:
+        log_info(
+            "prediction_request_received",
+            file_name=request.file_name,
+            file_extension=request.file_name.split(".")[-1].lower(),
+            target_json_length=len(request.target_json_example or ""),
+            file_base64_length=len(request.file_base64 or ""),
+        )
+
         extracted_preview = build_file_preview(
             file_name=request.file_name,
             base64file=request.file_base64,
         )
+        log_info(
+            "file_preview_built",
+            file_name=request.file_name,
+            preview_length=len(extracted_preview),
+        )
 
         target_schema = extract_json_structure(request.target_json_example)
+        log_info(
+            "target_schema_extracted",
+            schema_length=len(target_schema),
+        )
 
         informative, reason = preview_is_informative(extracted_preview)
         if not informative:
+            log_warning(
+                "preview_not_informative",
+                file_name=request.file_name,
+                reason=reason,
+            )
             return GenerateTsResponse(
                 content="",
                 extracted_preview=extracted_preview,
                 target_schema=target_schema,
                 status="warning",
                 valid_ts=False,
-                raw_content="",
                 message=reason,
             )
+
+        log_info(
+            "llm_request_started",
+            file_name=request.file_name,
+            file_extension=request.file_name.split(".")[-1].lower(),
+        )
 
         raw_result = chain.invoke(
             {
@@ -61,19 +111,44 @@ async def prediction(request: GenerateTsRequest):
             }
         )
 
+        log_info(
+            "llm_response_received",
+            raw_result_length=len(raw_result or ""),
+        )
+
         normalized_result = normalize_typescript_code(raw_result)
         valid_ts = looks_like_typescript(normalized_result)
 
-        return GenerateTsResponse(
+        log_info(
+            "llm_response_normalized",
+            normalized_length=len(normalized_result or ""),
+            valid_ts=valid_ts,
+        )
+
+        if not valid_ts:
+            log_warning(
+                "typescript_validation_warning",
+                message="LLM returned a response that needs manual review.",
+            )
+
+        response = GenerateTsResponse(
             content=normalized_result,
             extracted_preview=extracted_preview,
             target_schema=target_schema,
             status="ok" if valid_ts else "warning",
             valid_ts=valid_ts,
-            raw_content=raw_result,
             message="" if valid_ts else "LLM returned a response that needs manual review.",
         )
+
+        log_info(
+            "prediction_request_completed",
+            status=response.status,
+            valid_ts=response.valid_ts,
+        )
+        return response
+
     except Exception as ex:
+        log_exception("prediction_request_failed", ex)
         return JSONResponse(
             status_code=500,
             content={"message": str(ex)},
@@ -86,9 +161,18 @@ async def generate_from_example():
         csv_path = Path("crmData.csv")
         json_path = Path("crm.json")
 
+        log_info(
+            "generate_from_example_started",
+            csv_exists=csv_path.exists(),
+            json_exists=json_path.exists(),
+        )
+
         if not csv_path.exists():
+            log_warning("generate_from_example_missing_csv", path=str(csv_path))
             return JSONResponse(status_code=404, content={"message": "crmData.csv not found"})
+
         if not json_path.exists():
+            log_warning("generate_from_example_missing_json", path=str(json_path))
             return JSONResponse(status_code=404, content={"message": "crm.json not found"})
 
         file_base64 = base64.b64encode(csv_path.read_bytes()).decode("utf-8")
@@ -97,14 +181,30 @@ async def generate_from_example():
             ensure_ascii=False,
         )
 
+        log_info(
+            "generate_from_example_files_loaded",
+            file_base64_length=len(file_base64),
+            target_json_length=len(target_json_example),
+        )
+
         extracted_preview = build_file_preview(
             file_name="crmData.csv",
             base64file=file_base64,
         )
         target_schema = extract_json_structure(target_json_example)
 
+        log_info(
+            "generate_from_example_preview_schema_ready",
+            preview_length=len(extracted_preview),
+            schema_length=len(target_schema),
+        )
+
         informative, reason = preview_is_informative(extracted_preview)
         if not informative:
+            log_warning(
+                "generate_from_example_preview_not_informative",
+                reason=reason,
+            )
             return GenerateFromExampleResponse(
                 content="",
                 extracted_preview=extracted_preview,
@@ -113,6 +213,8 @@ async def generate_from_example():
                 valid_ts=False,
                 message=reason,
             )
+
+        log_info("generate_from_example_llm_request_started")
 
         raw_result = chain.invoke(
             {
@@ -123,10 +225,27 @@ async def generate_from_example():
             }
         )
 
+        log_info(
+            "generate_from_example_llm_response_received",
+            raw_result_length=len(raw_result or ""),
+        )
+
         normalized_result = normalize_typescript_code(raw_result)
         valid_ts = looks_like_typescript(normalized_result)
 
-        return GenerateFromExampleResponse(
+        log_info(
+            "generate_from_example_llm_response_normalized",
+            normalized_length=len(normalized_result or ""),
+            valid_ts=valid_ts,
+        )
+
+        if not valid_ts:
+            log_warning(
+                "generate_from_example_typescript_validation_warning",
+                message="LLM returned a response that needs manual review.",
+            )
+
+        response = GenerateFromExampleResponse(
             content=normalized_result,
             extracted_preview=extracted_preview,
             target_schema=target_schema,
@@ -134,7 +253,16 @@ async def generate_from_example():
             valid_ts=valid_ts,
             message="" if valid_ts else "LLM returned a response that needs manual review.",
         )
+
+        log_info(
+            "generate_from_example_completed",
+            status=response.status,
+            valid_ts=response.valid_ts,
+        )
+        return response
+
     except Exception as ex:
+        log_exception("generate_from_example_failed", ex)
         return JSONResponse(
             status_code=500,
             content={"message": str(ex)},

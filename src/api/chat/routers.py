@@ -40,7 +40,7 @@ def ui_landing():
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>TypeScript Generator</title>
+  <title>Sber TypeScript Generator</title>
   <style>
     :root {
       --safe-space: 20px;
@@ -647,8 +647,8 @@ def ui_landing():
     pre {
       margin: 0;
       padding: 18px 20px 22px;
-      min-height: 68vh;
-      max-height: 75vh;
+      min-height: 58vh;
+      max-height: 72vh;
       overflow: auto;
       white-space: pre-wrap;
       word-break: break-word;
@@ -685,8 +685,29 @@ def ui_landing():
       line-height: 1.55;
       white-space: pre-wrap;
       word-break: break-word;
-      max-height: 220px;
+      max-height: 280px;
       overflow: auto;
+    }
+
+    .log-line {
+      display: block;
+      padding: 2px 0;
+    }
+
+    .log-info {
+      color: #16a34a;
+    }
+
+    .log-warning {
+      color: #eab308;
+    }
+
+    .log-error {
+      color: #ef4444;
+    }
+
+    .log-default {
+      color: var(--muted);
     }
 
     @media (max-width: 1160px) {
@@ -748,7 +769,7 @@ def ui_landing():
       }
 
       pre {
-        min-height: 54vh;
+        min-height: 48vh;
       }
     }
   </style>
@@ -762,7 +783,7 @@ def ui_landing():
         </div>
 
         <div class="brand-copy">
-          <h1 class="brand-title">TypeScript Generator</h1>
+          <h1 class="brand-title">Sber TypeScript Generator</h1>
           <p class="brand-subtitle">
             Загрузка исходного файла и JSON-примера с генерацией TypeScript-кода под целевую структуру.
           </p>
@@ -798,8 +819,8 @@ def ui_landing():
               <span>TypeScript-конвертер</span>
             </div>
             <div class="hint-chip">
-              <strong>Backend</strong>
-              <span>/api/v1/prediction</span>
+              <strong>Логи</strong>
+              <span>project.log в корне проекта</span>
             </div>
             <div class="hint-chip">
               <strong>Команда</strong>
@@ -825,8 +846,8 @@ def ui_landing():
             <img src="/assets/image%201699%201.svg" alt="СберКот" />
             <div class="assistant-note">
               <b>Шаги:</b> загрузи <b>crmData.csv</b>, затем <b>crm.json</b>, нажми
-              <b>«Сгенерировать TypeScript»</b>, после чего проверь код и скачай
-              <b>generated_converter.ts</b>.
+              <b>«Сгенерировать TypeScript»</b>, после чего проверь код и открой
+              <b>логи проекта</b>, чтобы увидеть, что именно произошло внутри сервиса.
             </div>
           </div>
         </div>
@@ -870,7 +891,7 @@ def ui_landing():
           <div>
             <h2 class="panel-title">Сгенерированный TypeScript</h2>
             <p class="panel-subtitle" style="margin-bottom: 0;">
-              Основной результат. Все действия с кодом собраны в одном месте без дублирования.
+              Основной результат. Ниже также доступны логи проекта по последней операции.
             </p>
           </div>
 
@@ -904,8 +925,8 @@ def ui_landing():
         </details>
 
         <details class="output-panel">
-          <summary>Показать raw LLM response</summary>
-          <div id="rawOutput" class="details-body">Пока пусто.</div>
+          <summary>Показать логи проекта</summary>
+          <div id="logsOutput" class="details-body">Пока пусто.</div>
         </details>
       </main>
     </section>
@@ -922,7 +943,7 @@ def ui_landing():
     const statusEl = document.getElementById("status");
     const codeOutput = document.getElementById("codeOutput");
     const previewOutput = document.getElementById("previewOutput");
-    const rawOutput = document.getElementById("rawOutput");
+    const logsOutput = document.getElementById("logsOutput");
     const validBadge = document.getElementById("validBadge");
     const themeBtn = document.getElementById("themeBtn");
 
@@ -971,6 +992,56 @@ def ui_landing():
       themeBtn.textContent = theme === "dark" ? "☀️ Светлая тема" : "🌙 Тёмная тема";
     }
 
+    function escapeHtml(text) {
+      return text
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function renderLogs(lines) {
+      if (!lines || !lines.length) {
+        logsOutput.innerHTML = "Логи пока пусты.";
+        return;
+      }
+
+      const html = lines.map((line) => {
+        const safe = escapeHtml(line);
+        let cls = "log-default";
+
+        if (safe.includes("| INFO |")) {
+          cls = "log-info";
+        } else if (safe.includes("| WARNING |")) {
+          cls = "log-warning";
+        } else if (safe.includes("| ERROR |")) {
+          cls = "log-error";
+        }
+
+        return `<span class="log-line ${cls}">${safe}</span>`;
+      }).join("");
+
+      logsOutput.innerHTML = html;
+      logsOutput.scrollTop = logsOutput.scrollHeight;
+    }
+
+    async function fetchLogs(limit = 200) {
+      try {
+        const response = await fetch(`/api/v1/logs?limit=${limit}`);
+        const data = await response.json();
+        renderLogs(data.lines || []);
+      } catch (error) {
+        logsOutput.textContent = "Не удалось загрузить логи: " + error.message;
+      }
+    }
+
+    async function clearBackendLogs() {
+      try {
+        await fetch("/api/v1/logs/clear", { method: "POST" });
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
     async function generate() {
       const csvFile = csvFileInput.files[0];
       const jsonFile = jsonFileInput.files[0];
@@ -989,9 +1060,11 @@ def ui_landing():
       toggleCodeActions(false);
       latestCode = "";
 
+      await clearBackendLogs();
+
       codeOutput.textContent = "// Генерация...";
       previewOutput.textContent = "Загрузка...";
-      rawOutput.textContent = "Загрузка...";
+      logsOutput.textContent = "Загрузка логов...";
       setBadge("Идёт генерация");
       setStatus("Считываю файлы и отправляю запрос в backend...");
 
@@ -1024,24 +1097,24 @@ def ui_landing():
         latestCode = data.content || "";
         codeOutput.textContent = latestCode || "// Пустой ответ";
         previewOutput.textContent = data.extracted_preview || "Нет preview";
-        rawOutput.textContent = data.raw_content || "Нет raw ответа";
 
         if (data.valid_ts) {
           setBadge("TS похож на валидный", "ok");
           setStatus("TypeScript-код успешно сгенерирован.", "ok");
         } else {
           setBadge("Нужна проверка", "warning");
-          setStatus("Код получен, но его лучше проверить вручную.", "warning");
+          setStatus(data.message || "Код получен, но его лучше проверить вручную.", "warning");
         }
 
         toggleCodeActions(Boolean(latestCode));
+        await fetchLogs(300);
       } catch (error) {
         console.error(error);
         codeOutput.textContent = "// Ошибка генерации";
         previewOutput.textContent = "Ошибка";
-        rawOutput.textContent = String(error);
         setBadge("Ошибка", "warning");
         setStatus("Ошибка: " + error.message, "error");
+        await fetchLogs(300);
       } finally {
         generateBtn.disabled = false;
       }
@@ -1072,16 +1145,18 @@ def ui_landing():
       }
     }
 
-    function clearAll() {
+    async function clearAll() {
       csvFileInput.value = "";
       jsonFileInput.value = "";
       latestCode = "";
       codeOutput.textContent = "// Здесь появится TypeScript-код";
       previewOutput.textContent = "Пока пусто.";
-      rawOutput.textContent = "Пока пусто.";
+      logsOutput.textContent = "Пока пусто.";
       toggleCodeActions(false);
       setBadge("Ожидание генерации");
       setStatus("Готов к генерации.");
+      await clearBackendLogs();
+      await fetchLogs(50);
     }
 
     generateBtn.addEventListener("click", generate);
@@ -1095,6 +1170,7 @@ def ui_landing():
 
     const savedTheme = localStorage.getItem("ui-theme");
     applyTheme(savedTheme === "light" ? "light" : "dark");
+    fetchLogs(50);
   </script>
 </body>
 </html>
