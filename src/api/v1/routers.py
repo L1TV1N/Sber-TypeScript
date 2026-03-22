@@ -5,12 +5,14 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from agent import chain
+from agent import chain, mapping_chain
 from api.v1.schemas import (
     GenerateFromExampleResponse,
     GenerateTsRequest,
     GenerateTsResponse,
     LogsResponse,
+    ValidateTsRequest,
+    ValidateTsResponse,
 )
 from services.file_preview import build_file_preview
 from services.json_schema import extract_json_structure
@@ -26,6 +28,9 @@ from services.project_logger import (
     log_warning,
     read_recent_logs,
 )
+from services.ts_validator import validate_typescript_on_source
+from services.tabular_mapping import enrich_mapping_with_headers
+from services.tabular_ts_template import build_tabular_typescript, normalize_mapping_response
 
 api_router = APIRouter()
 
@@ -96,28 +101,63 @@ async def prediction(request: GenerateTsRequest):
                 message=reason,
             )
 
-        log_info(
-            "llm_request_started",
-            file_name=request.file_name,
-            file_extension=request.file_name.split(".")[-1].lower(),
-        )
+        file_extension = request.file_name.split(".")[-1].lower()
 
-        raw_result = chain.invoke(
-            {
-                "file_name": request.file_name,
-                "file_extension": request.file_name.split(".")[-1].lower(),
-                "target_schema": target_schema,
-                "extracted_preview": extracted_preview,
-            }
-        )
+        if file_extension in {"csv", "xls", "xlsx"}:
+            log_info(
+                "mapping_request_started",
+                file_name=request.file_name,
+                file_extension=file_extension,
+            )
 
-        log_info(
-            "llm_response_received",
-            raw_result_length=len(raw_result or ""),
-        )
+            raw_mapping = mapping_chain.invoke(
+                {
+                    "file_name": request.file_name,
+                    "file_extension": file_extension,
+                    "target_schema": target_schema,
+                    "extracted_preview": extracted_preview,
+                }
+            )
+            log_info("mapping_response_received", raw_result_length=len(raw_mapping or ""))
 
-        normalized_result = normalize_typescript_code(raw_result)
-        valid_ts = looks_like_typescript(normalized_result)
+            try:
+                parsed_mapping = normalize_mapping_response(raw_mapping)
+            except Exception:
+                parsed_mapping = {}
+
+            enriched_mapping = enrich_mapping_with_headers(
+                mapping_spec=parsed_mapping,
+                preview_json=extracted_preview,
+                target_json_example=request.target_json_example,
+            )
+            normalized_result = build_tabular_typescript(
+                target_json_example=request.target_json_example,
+                mapping_spec=enriched_mapping,
+            )
+            valid_ts = looks_like_typescript(normalized_result)
+        else:
+            log_info(
+                "llm_request_started",
+                file_name=request.file_name,
+                file_extension=file_extension,
+            )
+
+            raw_result = chain.invoke(
+                {
+                    "file_name": request.file_name,
+                    "file_extension": file_extension,
+                    "target_schema": target_schema,
+                    "extracted_preview": extracted_preview,
+                }
+            )
+
+            log_info(
+                "llm_response_received",
+                raw_result_length=len(raw_result or ""),
+            )
+
+            normalized_result = normalize_typescript_code(raw_result)
+            valid_ts = looks_like_typescript(normalized_result)
 
         log_info(
             "llm_response_normalized",
@@ -149,6 +189,41 @@ async def prediction(request: GenerateTsRequest):
 
     except Exception as ex:
         log_exception("prediction_request_failed", ex)
+        return JSONResponse(
+            status_code=500,
+            content={"message": str(ex)},
+        )
+
+
+@api_router.post("/validate-ts", response_model=ValidateTsResponse)
+async def validate_ts(request: ValidateTsRequest):
+    try:
+        log_info(
+            "validate_ts_request_received",
+            file_name=request.file_name,
+            file_extension=request.file_name.split(".")[-1].lower(),
+            code_length=len(request.ts_code or ""),
+            target_json_length=len(request.target_json_example or ""),
+        )
+
+        result = validate_typescript_on_source(
+            code=request.ts_code,
+            file_name=request.file_name,
+            file_base64=request.file_base64,
+            target_json_example=request.target_json_example,
+        )
+
+        log_info(
+            "validate_ts_request_completed",
+            is_valid=result.get("is_valid"),
+            source_record_count=result.get("source_record_count"),
+            output_record_count=result.get("output_record_count"),
+        )
+
+        return ValidateTsResponse(status="ok", **result)
+
+    except Exception as ex:
+        log_exception("validate_ts_request_failed", ex)
         return JSONResponse(
             status_code=500,
             content={"message": str(ex)},

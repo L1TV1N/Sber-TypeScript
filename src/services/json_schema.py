@@ -1,3 +1,4 @@
+from services.target_schema_utils import load_target_data, unwrap_target_sample
 import json
 from typing import Any
 
@@ -30,14 +31,8 @@ def extract_json_structure(target_json_example: str, interface_name: str = "Outp
     - inferred types
     Никакие значения из JSON не должны восприниматься как реальные данные.
     """
-    data = json.loads(target_json_example)
-
-    if isinstance(data, list) and data:
-        sample = data[0]
-    elif isinstance(data, dict):
-        sample = data
-    else:
-        sample = {}
+    data = load_target_data(target_json_example)
+    sample = unwrap_target_sample(data)
 
     if not isinstance(sample, dict):
         return json.dumps(

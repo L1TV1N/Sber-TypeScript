@@ -28,3 +28,22 @@ class GenerateFromExampleResponse(BaseModel):
 class LogsResponse(BaseModel):
     status: str = Field(description="Статус ответа", default="ok")
     lines: list[str] = Field(description="Последние строки файла логов", default_factory=list)
+
+
+class ValidateTsRequest(BaseModel):
+    file_name: str = Field(description="Имя исходного файла")
+    file_base64: str = Field(description="Исходный файл в base64")
+    target_json_example: str = Field(description="Пример JSON-структуры результата")
+    ts_code: str = Field(description="TypeScript-код для проверки")
+
+
+class ValidateTsResponse(BaseModel):
+    status: str = Field(description="Статус проверки", default="ok")
+    is_valid: bool = Field(description="Успешна ли проверка", default=False)
+    message: str = Field(description="Краткий итог проверки", default="")
+    details: list[str] = Field(description="Детали проверки", default_factory=list)
+    compiler_output: str = Field(description="Вывод компилятора TypeScript", default="")
+    runtime_output: str = Field(description="Вывод выполнения Node.js", default="")
+    result_preview: str = Field(description="Превью результата выполнения TS", default="")
+    source_record_count: int | None = Field(description="Оценка количества записей в исходном файле", default=None)
+    output_record_count: int | None = Field(description="Количество записей, которое вернул TS", default=None)
