@@ -1098,9 +1098,27 @@ def ui_landing():
         codeOutput.textContent = latestCode || "// Пустой ответ";
         previewOutput.textContent = data.extracted_preview || "Нет preview";
 
+        let previewMeta = null;
+
+        try {
+          previewMeta = JSON.parse(data.extracted_preview || "{}");
+        } catch (error) {
+          previewMeta = null;
+        }
+
+        const isImageSource = Boolean(previewMeta && previewMeta.format === "image");
+
         if (data.valid_ts) {
-          setBadge("TS похож на валидный", "ok");
-          setStatus("TypeScript-код успешно сгенерирован.", "ok");
+          if (isImageSource) {
+            setBadge("Нужна проверка", "warning");
+            setStatus(
+              "TS не сможет работать с исходным файлом, так как данные были получены с изображения",
+              "warning"
+            );
+          } else {
+            setBadge("TS похож на валидный", "ok");
+            setStatus("TypeScript-код успешно сгенерирован.", "ok");
+          }
         } else {
           setBadge("Нужна проверка", "warning");
           setStatus(data.message || "Код получен, но его лучше проверить вручную.", "warning");
