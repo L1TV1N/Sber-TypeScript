@@ -1245,7 +1245,7 @@ def ui_landing():
 
         const sourceFormat = previewMeta && previewMeta.format ? String(previewMeta.format) : "";
         const isImageSource = sourceFormat === "image";
-        const requiresManualTsCheck = isImageSource || sourceFormat === "pdf";
+        const requiresManualTsCheck = isImageSource;
         latestIsImageSource = isImageSource;
         latestRequiresManualTsCheck = requiresManualTsCheck;
 
@@ -1256,9 +1256,6 @@ def ui_landing():
               "TS не сможет работать с исходным файлом, так как данные были получены с изображения",
               "warning"
             );
-          } else if (sourceFormat === "pdf") {
-            setBadge("Нужна проверка", "warning");
-            setStatus("Для PDF доступна только ручная проверка TypeScript.", "warning");
           } else {
             setBadge("TS похож на валидный", "ok");
             setStatus("TypeScript-код успешно сгенерирован.", "ok");

@@ -133,22 +133,10 @@ def _estimate_source_record_count(file_name: str, raw_bytes: bytes) -> int | Non
             return 0
 
         if extension == ".pdf":
-            reader = PdfReader(io.BytesIO(raw_bytes))
-            text = "\n".join((page.extract_text() or "") for page in reader.pages[:10])
-            return len([line for line in text.splitlines() if line.strip()]) or None
+            return 1
 
         if extension == ".docx":
-            temp = None
-            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
-                tmp.write(raw_bytes)
-                temp = Path(tmp.name)
-            try:
-                doc = Document(str(temp))
-                lines = [p.text for p in doc.paragraphs if p.text.strip()]
-                return len(lines) or None
-            finally:
-                if temp:
-                    temp.unlink(missing_ok=True)
+            return 1
     except Exception:
         return None
 
@@ -318,17 +306,6 @@ def validate_typescript_on_source(*, code: str, file_name: str, file_base64: str
     source_record_count = _estimate_source_record_count(file_name, raw_bytes)
 
     extension = Path(file_name).suffix.lower()
-    if extension == ".pdf":
-        return {
-            "is_valid": False,
-            "message": "Для PDF требуется ручная проверка TypeScript.",
-            "details": ["Автоматическая проверка для PDF отключена: бинарная структура PDF не позволяет надёжно подтвердить корректность TS без отдельного PDF-runtime/парсера."],
-            "compiler_output": "",
-            "runtime_output": "",
-            "result_preview": "",
-            "source_record_count": source_record_count,
-            "output_record_count": None,
-        }
 
     with tempfile.TemporaryDirectory(prefix="ts_validate_") as temp_dir:
         temp_path = Path(temp_dir)

@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from agent import chain, mapping_chain
+from agent import chain, document_mapping_chain, mapping_chain
 from api.v1.schemas import (
     GenerateFromExampleResponse,
     GenerateTsRequest,
@@ -31,6 +31,11 @@ from services.project_logger import (
 from services.ts_validator import validate_typescript_on_source
 from services.tabular_mapping import enrich_mapping_with_headers
 from services.tabular_ts_template import build_tabular_typescript, normalize_mapping_response
+from services.document_ts_template import (
+    build_document_typescript,
+    enrich_document_mapping,
+    normalize_document_mapping_response,
+)
 
 api_router = APIRouter()
 
@@ -105,7 +110,7 @@ async def prediction(request: GenerateTsRequest):
 
         if file_extension in {"csv", "xls", "xlsx"}:
             log_info(
-                "mapping_request_started",
+                "gigachat_analysis_started",
                 file_name=request.file_name,
                 file_extension=file_extension,
             )
@@ -118,7 +123,7 @@ async def prediction(request: GenerateTsRequest):
                     "extracted_preview": extracted_preview,
                 }
             )
-            log_info("mapping_response_received", raw_result_length=len(raw_mapping or ""))
+            log_info("gigachat_analysis_completed", raw_result_length=len(raw_mapping or ""))
 
             try:
                 parsed_mapping = normalize_mapping_response(raw_mapping)
@@ -133,6 +138,37 @@ async def prediction(request: GenerateTsRequest):
             normalized_result = build_tabular_typescript(
                 target_json_example=request.target_json_example,
                 mapping_spec=enriched_mapping,
+            )
+            valid_ts = looks_like_typescript(normalized_result)
+        elif file_extension in {"pdf", "docx"}:
+            log_info(
+                "gigachat_document_analysis_started",
+                file_name=request.file_name,
+                file_extension=file_extension,
+            )
+            raw_plan = document_mapping_chain.invoke(
+                {
+                    "file_name": request.file_name,
+                    "file_extension": file_extension,
+                    "target_schema": target_schema,
+                    "extracted_preview": extracted_preview,
+                }
+            )
+            log_info("gigachat_document_analysis_completed", raw_result_length=len(raw_plan or ""))
+
+            try:
+                parsed_plan = normalize_document_mapping_response(raw_plan)
+            except Exception:
+                parsed_plan = {}
+
+            enriched_plan = enrich_document_mapping(
+                mapping_spec=parsed_plan,
+                target_json_example=request.target_json_example,
+            )
+            normalized_result = build_document_typescript(
+                target_json_example=request.target_json_example,
+                mapping_spec=enriched_plan,
+                file_extension=file_extension,
             )
             valid_ts = looks_like_typescript(normalized_result)
         else:
