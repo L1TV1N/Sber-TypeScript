@@ -7,8 +7,14 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
-import cv2
-import easyocr
+try:
+    import cv2
+except Exception:
+    cv2 = None
+try:
+    import easyocr
+except Exception:
+    easyocr = None
 import numpy as np
 import pandas as pd
 from docx import Document
@@ -54,13 +60,16 @@ def preview_csv_from_base64(base64file: str) -> str:
 
     reader = csv.DictReader(io.StringIO(text), delimiter=delimiter)
     rows = list(reader)
+    cleaned_rows = _clean_records(rows)
 
     result = {
         "format": "csv",
         "delimiter": delimiter,
         "columns": reader.fieldnames or [],
-        "sample_rows": rows[:5],
-        "total_sampled_rows": min(len(rows), 5),
+        "sample_rows": cleaned_rows[:5],
+        "all_rows": cleaned_rows[:500],
+        "total_rows": len(cleaned_rows),
+        "total_sampled_rows": min(len(cleaned_rows), 5),
         "preview_quality": "good" if (reader.fieldnames and len(rows) > 0) else "poor",
     }
     return json.dumps(result, ensure_ascii=False, indent=2)
@@ -72,26 +81,31 @@ def preview_excel_from_base64(base64file: str) -> str:
 
     excel = pd.ExcelFile(bio)
     sheets_result = []
+    primary_sheet = None
 
     for sheet_name in excel.sheet_names[:3]:
         bio.seek(0)
         df = pd.read_excel(bio, sheet_name=sheet_name)
         df = df.fillna("")
-        sample_rows = _clean_records(df.head(5).to_dict(orient="records"))
-
-        sheets_result.append(
-            {
-                "sheet_name": sheet_name,
-                "columns": list(df.columns.astype(str)),
-                "sample_rows": sample_rows,
-            }
-        )
+        all_rows = _clean_records(df.to_dict(orient="records"))
+        sheet_payload = {
+            "sheet_name": sheet_name,
+            "columns": list(df.columns.astype(str)),
+            "sample_rows": all_rows[:5],
+            "all_rows": all_rows[:500],
+            "row_count": len(all_rows),
+        }
+        sheets_result.append(sheet_payload)
+        if primary_sheet is None and sheet_payload["columns"] and all_rows:
+            primary_sheet = sheet_payload
 
     has_data = any(sheet["columns"] and sheet["sample_rows"] for sheet in sheets_result)
 
     result = {
         "format": "excel",
         "sheets": sheets_result,
+        "primary_sheet": primary_sheet,
+        "total_rows": sum(sheet.get("row_count", 0) for sheet in sheets_result),
         "preview_quality": "good" if has_data else "poor",
     }
     return json.dumps(result, ensure_ascii=False, indent=2)
@@ -103,15 +117,28 @@ def preview_pdf_from_base64(base64file: str) -> str:
 
     reader = PdfReader(bio)
     pages_text = []
-    for page in reader.pages[:5]:
+    for page in reader.pages[:10]:
         text = page.extract_text() or ""
         if text.strip():
-            pages_text.append(text[:3000])
+            pages_text.append(text[:5000])
+
+    full_text = "\n".join(pages_text)
+    key_lines = [line.strip() for line in full_text.splitlines() if line.strip()][:200]
+    kv_candidates = []
+    for line in key_lines:
+        if ':' in line:
+            k, v = line.split(':', 1)
+            kv_candidates.append({"key": k.strip(), "value": v.strip()})
 
     result = {
         "format": "pdf",
-        "pages_preview": pages_text,
-        "preview_quality": "weak" if pages_text else "poor",
+        "pages_preview": pages_text[:3],
+        "full_text": full_text[:20000],
+        "key_lines": key_lines,
+        "kv_candidates": kv_candidates,
+        "record_mode": "single_form",
+        "total_rows": 1,
+        "preview_quality": "good" if pages_text else "poor",
     }
     return json.dumps(result, ensure_ascii=False, indent=2)
 
@@ -123,13 +150,17 @@ def preview_docx_from_base64(base64file: str) -> str:
 
     doc = Document(str(temp_path))
 
-    paragraphs = [p.text for p in doc.paragraphs[:30] if p.text.strip()]
+    paragraphs = [p.text for p in doc.paragraphs if p.text.strip()]
     tables = []
+    kv_candidates = []
 
-    for table in doc.tables[:3]:
+    for table in doc.tables[:10]:
         rows = []
-        for row in table.rows[:6]:
-            rows.append([cell.text for cell in row.cells])
+        for row in table.rows[:50]:
+            cells = [cell.text.strip() for cell in row.cells]
+            rows.append(cells)
+            if len(cells) >= 2 and cells[0] and cells[1]:
+                kv_candidates.append({"key": cells[0], "value": cells[1]})
         tables.append(rows)
 
     try:
@@ -137,19 +168,33 @@ def preview_docx_from_base64(base64file: str) -> str:
     except Exception:
         pass
 
+    full_text = "\n".join(paragraphs + [" | ".join(r) for t in tables for r in t if any(r)])
+    key_lines = [line.strip() for line in full_text.splitlines() if line.strip()][:200]
+    for line in key_lines:
+        if ':' in line:
+            k, v = line.split(':', 1)
+            kv_candidates.append({"key": k.strip(), "value": v.strip()})
+
     has_content = bool(paragraphs or tables)
 
     result = {
         "format": "docx",
-        "paragraphs": paragraphs[:20],
-        "tables": tables,
-        "preview_quality": "weak" if has_content else "poor",
+        "paragraphs": paragraphs[:50],
+        "tables": tables[:5],
+        "full_text": full_text[:20000],
+        "key_lines": key_lines,
+        "kv_candidates": kv_candidates,
+        "record_mode": "single_form",
+        "total_rows": 1,
+        "preview_quality": "good" if has_content else "poor",
     }
     return json.dumps(result, ensure_ascii=False, indent=2)
 
 
 @lru_cache(maxsize=1)
 def _get_easyocr_reader():
+    if easyocr is None:
+        return None
     try:
         return easyocr.Reader(
             ["ru", "en"],
@@ -161,6 +206,8 @@ def _get_easyocr_reader():
 
 
 def _pil_to_bgr(image: Image.Image) -> np.ndarray:
+    if cv2 is None:
+        raise RuntimeError("OpenCV is not installed")
     rgb = np.array(image.convert("RGB"))
     return cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
 

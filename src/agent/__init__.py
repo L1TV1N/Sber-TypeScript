@@ -14,3 +14,6 @@ llm = GigaChat(
 )
 
 chain = agent_prompt | llm | StrOutputParser()
+
+from agent.mapping_message import mapping_prompt
+mapping_chain = mapping_prompt | llm | StrOutputParser()

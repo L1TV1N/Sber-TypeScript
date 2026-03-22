@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="7528e668-7ec9-45d5-993a-950c387853a9" name="Changes" comment="+all fix pdf -xlsx">
+      <change afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/#U0421#U0411#U0415#U0420_#U0411#U0410#U041d#U041a_#U0433#U0440#U0430#U0434#U0438#U0435#U043d#U0442.svg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/assets/#U0421#U0411#U0415#U0420_#U0411#U0410#U041d#U041a_#U0433#U0440#U0430#U0444#U0438#U0442#U043e#U0432#U044b#U0439.svg" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/run_ts_validation.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/agent/mapping_message.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/deterministic_ts_builder.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/source_record_builder.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/tabular_mapping.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/tabular_ts_template.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/target_schema_utils.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/services/ts_validator.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test_generated.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/agent/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/agent/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/agent/message.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/agent/message.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/api/chat/routers.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/api/chat/routers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/api/v1/routers.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/api/v1/routers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/api/v1/schemas.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/api/v1/schemas.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/file_preview.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/file_preview.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/json_schema.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/json_schema.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+    <option name="RESET_MODE" value="HARD" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;abbbobbbbabbba&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/L1TV1N/Sber-TypeScript&quot;,
+    &quot;accountId&quot;: &quot;ee8dc843-ef04-4ba8-951d-8fb53e92fd56&quot;
+  }
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 8
+}</component>
+  <component name="ProjectId" id="3BGnIocom7pGH9JPwvw3pz9TgEg" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/bulah/PycharmProjects/Sber-TypeScript&quot;
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\bulah\PycharmProjects\Sber-TypeScript" />
+    </key>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-python-sdk-2653e85de345-6d6dccd035ac-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-253.31033.139" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="7528e668-7ec9-45d5-993a-950c387853a9" name="Changes" comment="" />
+      <created>1774124198743</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1774124198743</updated>
+    </task>
+    <task id="LOCAL-00001" summary="+analys image">
+      <option name="closed" value="true" />
+      <created>1774146458532</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1774146458532</updated>
+    </task>
+    <task id="LOCAL-00002" summary="+UI for analys image">
+      <option name="closed" value="true" />
+      <created>1774147071323</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1774147071323</updated>
+    </task>
+    <task id="LOCAL-00003" summary="+all without pdf">
+      <option name="closed" value="true" />
+      <created>1774160333734</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1774160333735</updated>
+    </task>
+    <task id="LOCAL-00004" summary="+all fix pdf -xlsx">
+      <option name="closed" value="true" />
+      <created>1774161630683</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1774161630683</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="+analys image" />
+    <MESSAGE value="+UI for analys image" />
+    <MESSAGE value="+all without pdf" />
+    <MESSAGE value="+all fix pdf -xlsx" />
+    <option name="LAST_COMMIT_MESSAGE" value="+all fix pdf -xlsx" />
+  </component>
+</project>

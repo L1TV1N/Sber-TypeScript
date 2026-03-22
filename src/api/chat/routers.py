@@ -583,6 +583,12 @@ def ui_landing():
       color: #FFF0C3;
     }
 
+    .badge.error {
+      background: rgba(239,68,68,0.08);
+      border-color: rgba(239,68,68,0.24);
+      color: #FFD5D5;
+    }
+
     .code-frame {
       border-radius: 18px;
       overflow: hidden;
@@ -620,6 +626,10 @@ def ui_landing():
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+    }
+
+    .toolbar-btn-wrap {
+      display: inline-flex;
     }
 
     .toolbar-btn {
@@ -912,6 +922,9 @@ def ui_landing():
             <div class="toolbar-actions">
               <button id="copyBtn" class="toolbar-btn" disabled>Скопировать</button>
               <button id="downloadBtn" class="toolbar-btn primary" disabled>Скачать TS</button>
+              <span id="validateBtnWrap" class="toolbar-btn-wrap" title="Сначала сгенерируйте TypeScript-код">
+                <button id="validateBtn" class="toolbar-btn" disabled type="button">Проверить TS</button>
+              </span>
               <button id="clearBtn" class="toolbar-btn" type="button">Очистить</button>
             </div>
           </div>
@@ -922,6 +935,11 @@ def ui_landing():
         <details class="output-panel">
           <summary>Показать extracted preview</summary>
           <div id="previewOutput" class="details-body">Пока пусто.</div>
+        </details>
+
+        <details class="output-panel">
+          <summary>Показать результат проверки TS</summary>
+          <div id="validationOutput" class="details-body">Пока проверка не запускалась.</div>
         </details>
 
         <details class="output-panel">
@@ -940,14 +958,22 @@ def ui_landing():
     const downloadBtn = document.getElementById("downloadBtn");
     const copyBtn = document.getElementById("copyBtn");
     const clearBtn = document.getElementById("clearBtn");
+    const validateBtn = document.getElementById("validateBtn");
+    const validateBtnWrap = document.getElementById("validateBtnWrap");
     const statusEl = document.getElementById("status");
     const codeOutput = document.getElementById("codeOutput");
     const previewOutput = document.getElementById("previewOutput");
+    const validationOutput = document.getElementById("validationOutput");
     const logsOutput = document.getElementById("logsOutput");
     const validBadge = document.getElementById("validBadge");
     const themeBtn = document.getElementById("themeBtn");
 
     let latestCode = "";
+    let latestFileBase64 = "";
+    let latestFileName = "";
+    let latestTargetJsonText = "";
+    let latestIsImageSource = false;
+    let latestRequiresManualTsCheck = false;
 
     function setStatus(message, kind = "") {
       statusEl.className = "status" + (kind ? " " + kind : "");
@@ -962,6 +988,15 @@ def ui_landing():
     function toggleCodeActions(enabled) {
       copyBtn.disabled = !enabled;
       downloadBtn.disabled = !enabled;
+      validateBtn.disabled = !enabled || latestRequiresManualTsCheck;
+
+      if (!enabled) {
+        validateBtnWrap.title = "Сначала сгенерируйте TypeScript-код";
+      } else if (latestRequiresManualTsCheck) {
+        validateBtnWrap.title = "требуется ручная проверка";
+      } else {
+        validateBtnWrap.title = "Проверить TypeScript на исходном файле";
+      }
     }
 
     function readFileAsText(file) {
@@ -1042,6 +1077,99 @@ def ui_landing():
       }
     }
 
+    function renderValidationResult(data) {
+      const parts = [];
+
+      if (data.message) {
+        parts.push(`<b>Итог:</b> ${escapeHtml(data.message)}`);
+      }
+
+      if (data.source_record_count !== null || data.output_record_count !== null) {
+        parts.push(
+          `<b>Записей в исходном файле:</b> ${escapeHtml(String(data.source_record_count ?? "не удалось определить"))}<br>` +
+          `<b>Записей вернул TS:</b> ${escapeHtml(String(data.output_record_count ?? "не удалось определить"))}`
+        );
+      }
+
+      if (data.details && data.details.length) {
+        parts.push(`<b>Детали:</b><br>${data.details.map((item) => `• ${escapeHtml(item)}`).join("<br>")}`);
+      }
+
+      if (data.result_preview) {
+        parts.push(`<b>Превью результата TS:</b><pre>${escapeHtml(data.result_preview)}</pre>`);
+      }
+
+      if (data.compiler_output) {
+        parts.push(`<b>Вывод компилятора:</b><pre>${escapeHtml(data.compiler_output)}</pre>`);
+      }
+
+      if (data.runtime_output) {
+        parts.push(`<b>Вывод выполнения:</b><pre>${escapeHtml(data.runtime_output)}</pre>`);
+      }
+
+      validationOutput.innerHTML = parts.length
+        ? parts.join(`<hr style="border-color: rgba(255,255,255,0.08); margin: 14px 0;">`)
+        : "Проверка завершилась без дополнительных сообщений.";
+    }
+
+    async function validateTs() {
+      if (!latestCode || !latestFileBase64 || !latestTargetJsonText || !latestFileName) {
+        setStatus("Сначала сгенерируй TypeScript для выбранного исходного файла.", "error");
+        return;
+      }
+
+      if (latestRequiresManualTsCheck) {
+        setStatus("Для этого типа исходного файла требуется ручная проверка.", "warning");
+        return;
+      }
+
+      validateBtn.disabled = true;
+      setStatus("Проверяю TypeScript на исходном файле...", "warning");
+      setBadge("Идёт проверка", "warning");
+      validationOutput.textContent = "Проверка запущена...";
+
+      try {
+        const response = await fetch("/api/v1/validate-ts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            file_name: latestFileName,
+            file_base64: latestFileBase64,
+            target_json_example: latestTargetJsonText,
+            ts_code: latestCode,
+          }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Ошибка проверки TS");
+        }
+
+        renderValidationResult(data);
+
+        if (data.is_valid) {
+          setBadge("TS валидный", "ok");
+          setStatus("Проверка завершена: TypeScript корректно обработал исходный файл.", "ok");
+        } else {
+          setBadge("TS не валидный", "error");
+          setStatus(data.message || "TS не валидный, требуется пересоздание TS", "error");
+        }
+
+        await fetchLogs(300);
+      } catch (error) {
+        console.error(error);
+        validationOutput.textContent = "Ошибка проверки: " + error.message;
+        setBadge("Ошибка проверки", "error");
+        setStatus("Ошибка проверки: " + error.message, "error");
+        await fetchLogs(300);
+      } finally {
+        toggleCodeActions(Boolean(latestCode));
+      }
+    }
+
     async function generate() {
       const csvFile = csvFileInput.files[0];
       const jsonFile = jsonFileInput.files[0];
@@ -1057,13 +1185,18 @@ def ui_landing():
       }
 
       generateBtn.disabled = true;
-      toggleCodeActions(false);
       latestCode = "";
+      latestFileBase64 = "";
+      latestFileName = "";
+      latestTargetJsonText = "";
+      latestIsImageSource = false;
+      toggleCodeActions(false);
 
       await clearBackendLogs();
 
       codeOutput.textContent = "// Генерация...";
       previewOutput.textContent = "Загрузка...";
+      validationOutput.textContent = "Ожидание новой проверки...";
       logsOutput.textContent = "Загрузка логов...";
       setBadge("Идёт генерация");
       setStatus("Считываю файлы и отправляю запрос в backend...");
@@ -1073,6 +1206,10 @@ def ui_landing():
           readFileAsBase64(csvFile),
           readFileAsText(jsonFile),
         ]);
+
+        latestFileBase64 = fileBase64;
+        latestFileName = csvFile.name;
+        latestTargetJsonText = targetJsonText;
 
         const payload = {
           file_name: csvFile.name,
@@ -1106,7 +1243,11 @@ def ui_landing():
           previewMeta = null;
         }
 
-        const isImageSource = Boolean(previewMeta && previewMeta.format === "image");
+        const sourceFormat = previewMeta && previewMeta.format ? String(previewMeta.format) : "";
+        const isImageSource = sourceFormat === "image";
+        const requiresManualTsCheck = isImageSource;
+        latestIsImageSource = isImageSource;
+        latestRequiresManualTsCheck = requiresManualTsCheck;
 
         if (data.valid_ts) {
           if (isImageSource) {
@@ -1130,6 +1271,12 @@ def ui_landing():
         console.error(error);
         codeOutput.textContent = "// Ошибка генерации";
         previewOutput.textContent = "Ошибка";
+        validationOutput.textContent = "Проверка недоступна до успешной генерации.";
+        latestFileBase64 = "";
+        latestFileName = "";
+        latestTargetJsonText = "";
+        latestIsImageSource = false;
+        latestRequiresManualTsCheck = false;
         setBadge("Ошибка", "warning");
         setStatus("Ошибка: " + error.message, "error");
         await fetchLogs(300);
@@ -1167,8 +1314,13 @@ def ui_landing():
       csvFileInput.value = "";
       jsonFileInput.value = "";
       latestCode = "";
+      latestFileBase64 = "";
+      latestFileName = "";
+      latestTargetJsonText = "";
+      latestIsImageSource = false;
       codeOutput.textContent = "// Здесь появится TypeScript-код";
       previewOutput.textContent = "Пока пусто.";
+      validationOutput.textContent = "Пока проверка не запускалась.";
       logsOutput.textContent = "Пока пусто.";
       toggleCodeActions(false);
       setBadge("Ожидание генерации");
@@ -1180,6 +1332,7 @@ def ui_landing():
     generateBtn.addEventListener("click", generate);
     downloadBtn.addEventListener("click", downloadTs);
     copyBtn.addEventListener("click", copyCode);
+    validateBtn.addEventListener("click", validateTs);
     clearBtn.addEventListener("click", clearAll);
     themeBtn.addEventListener("click", () => {
       const next = htmlEl.getAttribute("data-theme") === "dark" ? "light" : "dark";
