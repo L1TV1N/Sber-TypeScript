@@ -9,7 +9,7 @@ class AppSettings(BaseSettings):
     app_host: str = Field(validation_alias="APP_HOST", default="0.0.0.0")
     app_port: int = Field(validation_alias="APP_PORT", default=8000)
 
-    gigachat_credentials: str = Field(validation_alias="GIGACHAT_CREDENTIALS")
+    gigachat_credentials: str | None = Field(validation_alias="GIGACHAT_CREDENTIALS", default=None)
     gigachat_scope: str = Field(validation_alias="GIGACHAT_SCOPE", default="GIGACHAT_API_CORP")
     gigachat_verify_ssl_certs: bool = Field(
         validation_alias="GIGACHAT_VERIFY_SSL_CERTS",

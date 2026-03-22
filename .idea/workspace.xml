@@ -4,27 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7528e668-7ec9-45d5-993a-950c387853a9" name="Changes" comment="+all fix pdf -xlsx">
-      <change afterPath="$PROJECT_DIR$/.env.example" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/#U0421#U0411#U0415#U0420_#U0411#U0410#U041d#U041a_#U0433#U0440#U0430#U0434#U0438#U0435#U043d#U0442.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/assets/#U0421#U0411#U0415#U0420_#U0411#U0410#U041d#U041a_#U0433#U0440#U0430#U0444#U0438#U0442#U043e#U0432#U044b#U0439.svg" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/run_ts_validation.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/agent/mapping_message.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/deterministic_ts_builder.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/source_record_builder.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/tabular_mapping.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/tabular_ts_template.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/target_schema_utils.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/services/ts_validator.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/test_generated.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/agent/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/agent/__init__.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/agent/message.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/agent/message.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/api/chat/routers.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/api/chat/routers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/api/v1/routers.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/api/v1/routers.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/api/v1/schemas.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/api/v1/schemas.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/file_preview.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/file_preview.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/services/json_schema.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/json_schema.py" afterDir="false" />
-    </list>
+    <list default="true" id="7528e668-7ec9-45d5-993a-950c387853a9" name="Changes" comment="LAAAAAAAAAAAAST" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -115,7 +95,15 @@
       <option name="project" value="LOCAL" />
       <updated>1774161630683</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="LAAAAAAAAAAAAST">
+      <option name="closed" value="true" />
+      <created>1774175304494</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1774175304494</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -134,6 +122,7 @@
     <MESSAGE value="+UI for analys image" />
     <MESSAGE value="+all without pdf" />
     <MESSAGE value="+all fix pdf -xlsx" />
-    <option name="LAST_COMMIT_MESSAGE" value="+all fix pdf -xlsx" />
+    <MESSAGE value="LAAAAAAAAAAAAST" />
+    <option name="LAST_COMMIT_MESSAGE" value="LAAAAAAAAAAAAST" />
   </component>
 </project>

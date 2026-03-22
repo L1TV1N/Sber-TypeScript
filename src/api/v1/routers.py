@@ -5,7 +5,7 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
-from agent import mapping_chain
+from agent import get_mapping_chain
 from api.v1.schemas import (
     GenerateFromExampleResponse,
     GenerateTsRequest,
@@ -109,7 +109,7 @@ async def prediction(request: GenerateTsRequest):
             file_extension=file_extension,
         )
 
-        raw_mapping = mapping_chain.invoke(
+        raw_mapping = get_mapping_chain().invoke(
             {
                 "file_name": request.file_name,
                 "file_extension": file_extension,
