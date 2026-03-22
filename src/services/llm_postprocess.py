@@ -1,3 +1,4 @@
+import json
 import re
 
 
@@ -8,14 +9,14 @@ def extract_typescript_code(text: str) -> str:
     cleaned = text.strip()
 
     fenced = re.findall(
-        r"```(?:ts|typescript)?\\s*(.*?)```",
+        r"```(?:ts|typescript)?\s*(.*?)```",
         cleaned,
         flags=re.DOTALL | re.IGNORECASE,
     )
     if fenced:
         cleaned = fenced[0].strip()
 
-    cleaned = cleaned.replace("\\r\\n", "\\n").strip()
+    cleaned = cleaned.replace("\r\n", "\n").strip()
 
     export_idx = cleaned.find("export interface")
     if export_idx == -1:
@@ -55,12 +56,32 @@ def looks_like_typescript(code: str) -> bool:
 
 
 def preview_is_informative(preview: str) -> tuple[bool, str]:
-    preview_lower = preview.lower()
+    try:
+        preview_data = json.loads(preview)
+    except Exception:
+        preview_lower = preview.lower()
+        if '"preview_quality": "poor"' in preview_lower:
+            return (
+                False,
+                "Файл не содержит достаточно структурированных данных для надежной генерации TypeScript.",
+            )
+        return True, ""
 
-    if '"preview_quality": "poor"' in preview_lower:
-        return False, "File preview is poor. The file does not provide enough structured data for reliable TypeScript generation."
+    if preview_data.get("preview_quality") == "poor":
+        if preview_data.get("format") == "image":
+            return (
+                False,
+                "Введенные изображения содержат недостаточно текстовых или числовых данных для надежного анализа.",
+            )
+        return (
+            False,
+            "File preview is poor. The file does not provide enough structured data for reliable TypeScript generation.",
+        )
 
-    if '"format": "image"' in preview_lower:
-        return False, "Image input is not supported as a reliable data source in MVP because OCR is not implemented."
+    if preview_data.get("format") == "image" and not preview_data.get("contains_text_data"):
+        return (
+            False,
+            "Введенные изображения содержат недостаточно текстовых или числовых данных для надежного анализа.",
+        )
 
     return True, ""
